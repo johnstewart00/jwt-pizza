@@ -113,4 +113,8 @@ test("purchase with login", async ({ page }) => {
 
   // Check balance
   await expect(page.getByText("0.008")).toBeVisible();
+  const verifyBtn = page.getByRole("button", { name: "Verify" });
+  await expect(verifyBtn).toBeVisible();
+  await verifyBtn.click();
+  await expect(page.getByText("JWT Pizza - invalid")).toBeVisible();
 });

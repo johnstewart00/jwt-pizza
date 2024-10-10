@@ -6,11 +6,9 @@ on:
       - main
   workflow_dispatch:
 jobs:
-  build:
-    name: Build
+  test:
+    name: Test
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.set_version.outputs.version }}
     steps:
       - name: Run tests
         run: |
@@ -26,6 +24,12 @@ jobs:
           git add .
           git commit -m "generated"
           git push
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set_version.outputs.version }}
+    steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 

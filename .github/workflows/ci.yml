@@ -36,6 +36,10 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist/
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
       - name: Run tests
         run: |
           npx playwright install --with-deps chromium

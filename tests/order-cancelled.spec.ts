@@ -109,8 +109,8 @@ test("purchase with login", async ({ page }) => {
   await expect(page.locator("tbody")).toContainText("Veggie");
   await expect(page.locator("tbody")).toContainText("Pepperoni");
   await expect(page.locator("tfoot")).toContainText("0.008 ₿");
-  await page.getByRole("button", { name: "Pay now" }).click();
+  await page.getByRole("button", { name: "Cancel" }).click();
 
   // Check balance
-  await expect(page.getByText("0.008")).toBeVisible();
+  await expect(page.getByText("Awesome is a click away")).toBeVisible();
 });

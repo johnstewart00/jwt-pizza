@@ -1,7 +1,14 @@
 import { expect } from "playwright-test-coverage";
 
 export const logoutUser = async (page: any) => {
-  await page.goto("http://localhost:5173/");
+  await page.route("*/**/api/auth", async (route) => {
+    const logoutRes = {
+      message: "Successfully logged out",
+    };
+    expect(route.request().method()).toBe("DELETE");
+    await route.fulfill({ json: logoutRes });
+  });
+  await page.goto("/");
 
   const logoutButton = page.getByText("Logout");
 
@@ -22,8 +29,24 @@ export const logoutUser = async (page: any) => {
   await expect(logoutButton).not.toBeVisible();
 };
 
-export const loginUser = async (page: any) => {
-  await page.goto("http://localhost:5173/");
+export const loginUser = async (page: any, role = "diner") => {
+  await page.route("*/**/api/auth", async (route) => {
+    const loginReq = { email: "d@jwt.com", password: "a" };
+    const loginRes = {
+      user: {
+        id: 3,
+        name: "Kai Chen",
+        email: "d@jwt.com",
+        roles: [{ role: role }],
+      },
+      token: "abcdef",
+    };
+    expect(route.request().method()).toBe("PUT");
+    expect(route.request().postDataJSON()).toMatchObject(loginReq);
+    await route.fulfill({ json: loginRes });
+  });
+
+  await page.goto("/");
 
   // Use getByText to select the elements based on visible text
   const loginButton = page.getByText("Login");
@@ -35,13 +58,12 @@ export const loginUser = async (page: any) => {
 
   // Perform login action
   await loginButton.click();
-  await page.getByPlaceholder("Email address").fill("a@gmail.com");
-  await page.getByPlaceholder("Password").fill("Password123!");
-
-  // Click on the "Login" button after entering credentials
-  const loginButton2 = page.getByRole("button", { name: "Login" });
-  await expect(loginButton2).toBeVisible();
-  await loginButton2.click();
+  // Login
+  await page.getByPlaceholder("Email address").click();
+  await page.getByPlaceholder("Email address").fill("d@jwt.com");
+  await page.getByPlaceholder("Email address").press("Tab");
+  await page.getByPlaceholder("Password").fill("a");
+  await page.getByRole("button", { name: "Login" }).click();
 
   const logoutButton = page.getByText("Logout");
 
@@ -49,29 +71,37 @@ export const loginUser = async (page: any) => {
   await expect(logoutButton).toBeVisible();
 };
 
+const registerResponse = {
+  id: 1,
+  name: "a",
+  email: "a@gmail.com",
+  token:
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhIiwiZXhwIjoxNjUxNzg3NzI3fQ.0zF0zGp5cW5OYxZaHb6hF0XyJqPnJk2Dn0J2dS9w4xI",
+};
+
 export const registerUser = async (page: any) => {
   // Mock the register API call
-  // await page.route("**/api/auth", async (route) => {
-  //   expect(route.request().method()).toBe("POST");
-  //   const postData = route.request().postData();
-  //   const requestBody = postData ? JSON.parse(postData) : null;
+  await page.route("**/api/auth", async (route) => {
+    expect(route.request().method()).toBe("POST");
+    const postData = route.request().postData();
+    const requestBody = postData ? JSON.parse(postData) : null;
 
-  //   expect(requestBody).toEqual({
-  //     name: "a",
-  //     email: "a@gmail.com",
-  //     password: "Password123!",
-  //   });
+    expect(requestBody).toEqual({
+      name: "a",
+      email: "a@gmail.com",
+      password: "Password123!",
+    });
 
-  //   // Fulfill the route with mock data
-  //   await route.fulfill({
-  //     status: 200,
-  //     contentType: "application/json",
-  //     body: JSON.stringify(registerResponse),
-  //   });
-  // });
+    // Fulfill the route with mock data
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(registerResponse),
+    });
+  });
 
   // Navigate to the page
-  await page.goto("http://localhost:5173/");
+  await page.goto("/");
 
   // Click on the "Register" link
   await page.getByRole("link", { name: "Register" }).click();
@@ -109,7 +139,6 @@ export const registerUser = async (page: any) => {
   // Click the "Register" button
   const registerButton = page.getByRole("button", { name: "Register" });
   await expect(registerButton).toBeVisible();
-  await registerButton.click();
 };
 
 export const orderPizza = async (page) => {

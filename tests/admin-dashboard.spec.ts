@@ -1,22 +1,18 @@
 import { test, expect } from "playwright-test-coverage";
-
-const logInAdmin = async (page: any) => {
-  await page.goto("http://localhost:5173/");
-  await page.getByRole("link", { name: "Login" }).click();
-  await page.getByPlaceholder("Email address").click();
-  await page.getByPlaceholder("Email address").fill("a@jwt.com");
-  await page.getByPlaceholder("Password").click();
-  await page.getByPlaceholder("Password").fill("admin");
-  await page.getByPlaceholder("Password").press("Enter");
-};
+import { loginUser } from "./misc";
 
 const goToAdminDashboard = async (page: any) => {
-  const adminLink = page.getByRole("link", { name: "Admin" });
+  const adminLink = page.getByText("Admin");
   await expect(adminLink).toBeVisible();
   await adminLink.click();
 };
 
 const deleteFranchise = async (page: any, name: string) => {
+  await page.route("*/**/api/franchise/:franchiseId", async (route) => {
+    const res = { message: "franchise deleted" };
+    expect(route.request().method()).toBe("DELETE");
+    await route.fulfill({ json: res });
+  });
   // Locate the franchise row containing the given name
   const franchiseRow = page.locator(`tr:has-text("${name}")`);
 
@@ -41,7 +37,31 @@ const deleteFranchise = async (page: any, name: string) => {
 };
 
 test("add franchise", async ({ page }) => {
-  await logInAdmin(page);
+  await page.route("*/**/api/franchise", async (route) => {
+    if (route.request().method() === "POST") {
+      const req = { name: "bobbyJoes", admins: [{ email: "d@jwt.com" }] };
+      const res = {
+        name: "bobbyJoes",
+        admins: [{ email: "d@jwt.com", id: 3, name: "Kai Chen" }],
+        id: 1,
+      };
+      expect(route.request().postDataJSON()).toMatchObject(req);
+      await route.fulfill({ json: res });
+    } else {
+      const res = [
+        {
+          id: 2,
+          name: "pizzaPocket",
+          admins: [{ id: 4, name: "bobbyJoes", email: "d@jwt.com" }],
+          stores: [{ id: 4, name: "SLC", totalRevenue: 0 }],
+        },
+      ];
+      expect(route.request().method()).toBe("GET");
+      await route.fulfill({ json: res });
+    }
+  });
+
+  await loginUser(page, "admin");
   await goToAdminDashboard(page);
   const adminHeader = page.getByRole("heading", {
     name: "Mama Ricci's kitchen",
@@ -61,7 +81,7 @@ test("add franchise", async ({ page }) => {
   );
   await expect(adminEmailAddressInput).toBeVisible();
   await adminEmailAddressInput.click();
-  await adminEmailAddressInput.fill("a@jwt.com");
+  await adminEmailAddressInput.fill("d@jwt.com");
   const submitButton = page.getByRole("button", { name: "Create" });
   await expect(submitButton).toBeVisible();
   await submitButton.click();

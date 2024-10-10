@@ -1,7 +1,7 @@
 import { test, expect } from "playwright-test-coverage";
 
 test("test", async ({ page }) => {
-  await page.goto("http://localhost:5173/");
+  await page.goto("/");
   await page
     .getByLabel("Global")
     .getByRole("link", { name: "Franchise" })
